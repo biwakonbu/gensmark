@@ -228,6 +228,40 @@ describe("resolveSlide", () => {
     expect(computed.notes).toBe("My notes");
   });
 
+  test("gradient 背景で unsupported-feature バリデーションが返る", () => {
+    const { validations } = resolveSlide(
+      {
+        layout: "content",
+        data: { title: "T" },
+        background: { type: "gradient", colors: ["#FF0000", "#0000FF"], direction: "horizontal" },
+      },
+      testMaster,
+      0,
+    );
+
+    const gradientInfo = validations.find((v) => v.type === "unsupported-feature");
+    expect(gradientInfo).toBeDefined();
+    expect(gradientInfo?.severity).toBe("info");
+    expect(gradientInfo?.message).toContain("Gradient background");
+    expect(gradientInfo?.message).toContain("#FF0000");
+    expect(gradientInfo?.suggestion).toContain("solid or image");
+  });
+
+  test("solid 背景では unsupported-feature バリデーションが返らない", () => {
+    const { validations } = resolveSlide(
+      {
+        layout: "content",
+        data: { title: "T" },
+        background: { type: "solid", color: "#FF0000" },
+      },
+      testMaster,
+      0,
+    );
+
+    const gradientInfo = validations.find((v) => v.type === "unsupported-feature");
+    expect(gradientInfo).toBeUndefined();
+  });
+
   test("computedFontSize は resolvedStyle.fontSize と同値", () => {
     const { computed } = resolveSlide(
       { layout: "content", data: { title: "T", body: "B" } },

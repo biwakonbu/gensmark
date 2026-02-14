@@ -142,6 +142,18 @@ export function resolveSlide(
   // 背景の解決 (スライド固有 > レイアウト)
   const background = content.background ?? layout.background;
 
+  // グラデーション背景は pptxgenjs 非サポートのためフォールバック通知
+  if (background?.type === "gradient") {
+    validations.push({
+      slideIndex,
+      placeholder: "",
+      severity: "info",
+      type: "unsupported-feature",
+      message: `Gradient background is not fully supported. Will fallback to solid color: ${background.colors[0] ?? "#ffffff"}`,
+      suggestion: `Use solid or image background for reliable rendering`,
+    });
+  }
+
   return {
     computed: {
       index: slideIndex,

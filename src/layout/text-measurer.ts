@@ -181,6 +181,26 @@ export class TextMeasurer {
             currentWidth = charWidth;
           }
         } else {
+          // 先読み: 次の文字が行頭禁止文字の場合の追い出し処理
+          const nextIdx = i + charLen;
+          if (nextIdx < text.length) {
+            const nextCode = text.codePointAt(nextIdx)!;
+            const nLen = nextCode > 0xffff ? 2 : 1;
+            const nChar = text.slice(nextIdx, nextIdx + nLen);
+
+            if (LINE_START_PROHIBITED.test(nChar)) {
+              const nCharWidth = this.measureTextWidth(nChar, font, fontSize);
+              if (currentWidth + charWidth + nCharWidth > maxWidthPt && currentLine.length > 0) {
+                // char + nextChar が収まらない → char を含めて次行に送る
+                lines.push(currentLine);
+                currentLine = char + nChar;
+                currentWidth = charWidth + nCharWidth;
+                i = nextIdx + nLen;
+                continue;
+              }
+            }
+          }
+          // 通常: char を現在行に追加
           currentLine += char;
           currentWidth += charWidth;
         }

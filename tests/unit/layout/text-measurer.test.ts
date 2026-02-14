@@ -118,6 +118,36 @@ describe("TextMeasurer", () => {
       expect(result.lineCount).toBeGreaterThanOrEqual(1);
       expect(result.width).toBeGreaterThan(0);
     });
+
+    test("禁則処理: 行幅ぎりぎりで句読点が行頭に来ない (追い出し処理)", () => {
+      // 「漢字」が収まるが「漢字。」だと溢れる幅を設定
+      // まず「漢字」2文字の幅を計測
+      const twoCharWidth = measurer.measureTextWidth("漢字", font, 12);
+      const periodWidth = measurer.measureTextWidth("。", font, 12);
+      // 2文字は収まるが 2文字+句読点は溢れる幅 (pt → インチ)
+      const tightWidth = (twoCharWidth + periodWidth / 2) / 72;
+
+      const result = measurer.measure("漢字。他", font, 12, tightWidth);
+      // 行頭禁止文字「。」が行頭に来ていないことを確認
+      for (let i = 1; i < result.lines.length; i++) {
+        expect(result.lines[i]!.startsWith("。")).toBe(false);
+      }
+    });
+
+    test("禁則処理: 句読点を含む日本語テキストで行頭に句読点が来ない", () => {
+      // 狭い幅で複数回改行が発生するテキスト
+      const result = measurer.measure(
+        "今日は天気。明日も晴れ。来週は雨、傘が必要。",
+        font,
+        12,
+        1.0,
+      );
+      // 全ての行 (2行目以降) で行頭禁止文字が行頭に来ていないことを確認
+      for (let i = 1; i < result.lines.length; i++) {
+        const line = result.lines[i]!;
+        expect(line).not.toMatch(/^[、。，．]/);
+      }
+    });
   });
 
   describe("findFittingFontSize", () => {

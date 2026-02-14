@@ -63,6 +63,11 @@ export class OverflowDetector {
     fontSize: number,
     lineSpacing: number,
   ): DetectionResult {
+    // image / table はテキスト計測不要 (存在チェックは slide-resolver で実施)
+    if (typeof value !== "string" && (value.type === "image" || value.type === "table")) {
+      return { validations: [], computedFontSize: fontSize };
+    }
+
     const constraints = placeholder.constraints;
     const overflow = constraints?.overflow ?? "warn";
     const maxFontSize = constraints?.maxFontSize ?? fontSize;

@@ -10,7 +10,8 @@ export type ValidationType =
   | "unknown-layout"
   | "unknown-placeholder"
   | "font-not-found"
-  | "image-not-found";
+  | "image-not-found"
+  | "unsupported-feature";
 
 /** オーバーフロー詳細 */
 export interface OverflowDetail {
