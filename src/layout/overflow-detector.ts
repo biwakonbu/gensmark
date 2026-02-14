@@ -311,21 +311,38 @@ export class OverflowDetector {
 
     switch (overflow) {
       case "shrink": {
-        // 箇条書きの場合、全アイテムのフォントサイズを段階的に縮小
-        let trySize = fontSize;
-        while (trySize >= minFontSize) {
-          const tryResult = measureBulletList(
-            bullet,
-            this.measurer,
-            font,
-            trySize,
-            effectiveSize.width,
-            lineSpacing,
-          );
-          if (tryResult.height <= effectiveSize.height) {
-            return { validations, computedFontSize: trySize };
+        // 箇条書きの場合、二分探索で収まるフォントサイズを見つける
+        const minResult = measureBulletList(
+          bullet,
+          this.measurer,
+          font,
+          minFontSize,
+          effectiveSize.width,
+          lineSpacing,
+        );
+        if (minResult.height <= effectiveSize.height) {
+          // 最小サイズで収まる → 二分探索で最大サイズを見つける
+          let low = minFontSize;
+          let high = fontSize;
+          let bestSize = minFontSize;
+          while (high - low > 0.5) {
+            const mid = (low + high) / 2;
+            const midResult = measureBulletList(
+              bullet,
+              this.measurer,
+              font,
+              mid,
+              effectiveSize.width,
+              lineSpacing,
+            );
+            if (midResult.height <= effectiveSize.height) {
+              bestSize = mid;
+              low = mid;
+            } else {
+              high = mid;
+            }
           }
-          trySize -= 0.5;
+          return { validations, computedFontSize: bestSize };
         }
         // 最小でも収まらない
         detail.suggestedFontSize = minFontSize;

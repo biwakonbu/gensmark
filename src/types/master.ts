@@ -47,6 +47,10 @@ export interface PlaceholderStyle {
   valign?: VerticalAlign;
   /** 行間 (倍率、例: 1.5) */
   lineSpacing?: number;
+  /** 等幅フォント (コードブロック用) */
+  monoFont?: string;
+  /** コードブロック背景色 */
+  codeBgColor?: string;
   /** パディング (インチ) */
   padding?: {
     top?: number;

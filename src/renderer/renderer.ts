@@ -16,4 +16,7 @@ export interface Renderer {
 
   /** ファイルとして保存 */
   toFile(path: string): Promise<void>;
+
+  /** リソースを解放 (任意実装) */
+  dispose?(): void;
 }

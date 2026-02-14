@@ -164,9 +164,11 @@ export class TextMeasurer {
 
           if (nextChar && LINE_START_PROHIBITED.test(nextChar)) {
             // 禁則処理: 次の文字が行頭禁止文字なら、現在の文字ごと次行に送る
+            const nextCharWidth = this.measureTextWidth(nextChar, font, fontSize);
             lines.push(currentLine);
-            currentLine = char;
-            currentWidth = charWidth;
+            currentLine = char + nextChar;
+            currentWidth = charWidth + nextCharWidth;
+            i += nextCharLen; // 禁止文字をスキップ
           } else if (LINE_END_PROHIBITED.test(char)) {
             // 禁則処理: 行末禁止文字は次行の先頭に送る
             lines.push(currentLine);

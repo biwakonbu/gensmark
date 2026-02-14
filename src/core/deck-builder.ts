@@ -23,12 +23,13 @@ export class DeckBuilder {
   private master: SlideMaster;
   private slides: SlideContent[] = [];
   private layoutEngine: LayoutEngine;
-  private rendererInstance: Renderer | undefined;
+  private userRenderer: Renderer | undefined;
+  private autoRenderer: Renderer | undefined;
   readonly aspectRatio: AspectRatio;
 
   constructor(options: DeckBuilderOptions) {
     this.master = options.master;
-    this.rendererInstance = options.renderer;
+    this.userRenderer = options.renderer;
     this.aspectRatio = options.aspectRatio ?? options.master.aspectRatio ?? "16:9";
     this.layoutEngine = new LayoutEngine();
   }
@@ -41,28 +42,13 @@ export class DeckBuilder {
 
   /** バリデーションのみ実行 */
   async validate(): Promise<ValidationResult[]> {
-    const allValidations: ValidationResult[] = [];
-    const computedSlides = this.resolveSlides(allValidations);
-
-    // レイアウトエンジンでオーバーフロー検知
-    for (const computed of computedSlides) {
-      const layoutValidations = await this.layoutEngine.validateSlide(computed, this.master);
-      allValidations.push(...layoutValidations);
-    }
-
-    return allValidations;
+    const { validations } = await this.resolveAndValidate();
+    return validations;
   }
 
   /** ビルド (バリデーション + レンダリング) */
   async build(): Promise<BuildResult> {
-    const allValidations: ValidationResult[] = [];
-    const computedSlides = this.resolveSlides(allValidations);
-
-    // レイアウトエンジンでオーバーフロー検知
-    for (const computed of computedSlides) {
-      const layoutValidations = await this.layoutEngine.validateSlide(computed, this.master);
-      allValidations.push(...layoutValidations);
-    }
+    const { validations: allValidations, computedSlides } = await this.resolveAndValidate();
 
     const hasErrors = allValidations.some((v) => v.severity === "error");
 
@@ -97,6 +83,23 @@ export class DeckBuilder {
     };
   }
 
+  /** スライドの解決 + バリデーション (共通処理) */
+  private async resolveAndValidate(): Promise<{
+    validations: ValidationResult[];
+    computedSlides: ComputedSlide[];
+  }> {
+    const validations: ValidationResult[] = [];
+    const computedSlides = this.resolveSlides(validations);
+
+    // レイアウトエンジンでオーバーフロー検知
+    for (const computed of computedSlides) {
+      const layoutValidations = await this.layoutEngine.validateSlide(computed, this.master);
+      validations.push(...layoutValidations);
+    }
+
+    return { validations, computedSlides };
+  }
+
   /** スライドの解決 */
   private resolveSlides(validations: ValidationResult[]): ComputedSlide[] {
     const computed: ComputedSlide[] = [];
@@ -113,11 +116,12 @@ export class DeckBuilder {
 
   /** レンダラーの取得 (遅延ロード) */
   private async getRenderer(): Promise<Renderer> {
-    if (this.rendererInstance) return this.rendererInstance;
+    // ユーザー提供レンダラーがあればそれを使う
+    if (this.userRenderer) return this.userRenderer;
 
-    // PptxRenderer を遅延ロード
+    // 自動生成レンダラーは毎回新しいインスタンスを作成 (複数回 build() で重複スライドを防止)
     const { PptxRenderer } = await import("../renderer/pptx/pptx-renderer.ts");
-    this.rendererInstance = new PptxRenderer(this.aspectRatio);
-    return this.rendererInstance;
+    this.autoRenderer = new PptxRenderer(this.aspectRatio);
+    return this.autoRenderer;
   }
 }

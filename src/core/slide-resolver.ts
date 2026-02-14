@@ -1,4 +1,5 @@
-import type { SlideContent } from "../types/content.ts";
+import { existsSync } from "node:fs";
+import type { ImageContent, SlideContent } from "../types/content.ts";
 import type { ComputedElement, ComputedSlide } from "../types/layout.ts";
 import type { PlaceholderDef, PlaceholderStyle, SlideMaster } from "../types/master.ts";
 import type { ValidationResult } from "../types/validation.ts";
@@ -35,6 +36,8 @@ function resolveStyle(
     ...DEFAULT_STYLE,
     fontFace: master.theme.fonts.body,
     color: master.theme.colors.text,
+    monoFont: master.theme.fonts.mono ?? "Courier New",
+    codeBgColor: master.theme.colors.muted ?? "#F5F5F5",
     ...typeDefaults,
     ...(placeholder.type === "title" ? { fontFace: master.theme.fonts.heading } : {}),
     ...placeholder.style,
@@ -93,6 +96,26 @@ export function resolveSlide(
       continue;
     }
 
+    // 画像コンテンツの存在チェック
+    if (typeof value !== "string" && value.type === "image") {
+      const img = value as ImageContent;
+      // URL でないローカルパスの場合のみチェック
+      if (
+        !img.path.startsWith("http://") &&
+        !img.path.startsWith("https://") &&
+        !existsSync(img.path)
+      ) {
+        validations.push({
+          slideIndex,
+          placeholder: name,
+          severity: "error",
+          type: "image-not-found",
+          message: `Image file not found: "${img.path}"`,
+          suggestion: `Verify the image path exists or provide a valid URL`,
+        });
+      }
+    }
+
     const resolvedStyle = resolveStyle(placeholder, master);
 
     elements.push({
@@ -101,6 +124,19 @@ export function resolveSlide(
       resolvedStyle,
       computedFontSize: resolvedStyle.fontSize,
     });
+  }
+
+  // データが渡されなかったプレースホルダーを検知
+  for (const [phName, phDef] of placeholderMap) {
+    if (!(phName in content.data) && phDef.type !== "image") {
+      validations.push({
+        slideIndex,
+        placeholder: phName,
+        severity: "info",
+        type: "missing-placeholder",
+        message: `No data provided for placeholder "${phName}" (type: ${phDef.type}) in layout "${content.layout}"`,
+      });
+    }
   }
 
   // 背景の解決 (スライド固有 > レイアウト)

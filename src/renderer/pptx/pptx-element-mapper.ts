@@ -54,7 +54,7 @@ export function addTextElement(slide: PptxGenJS.Slide, element: ComputedElement)
       addTable(slide, value, ph, style);
       break;
     case "code":
-      addCode(slide, value, baseOpts);
+      addCode(slide, value, baseOpts, element);
       break;
   }
 }
@@ -214,12 +214,17 @@ function addCode(
   slide: PptxGenJS.Slide,
   content: CodeContent,
   baseOpts: PptxGenJS.TextPropsOptions,
+  element: ComputedElement,
 ): void {
+  // テーマの mono フォントと muted カラーを使用
+  const monoFont = element.resolvedStyle.monoFont ?? "Courier New";
+  const codeBg = element.resolvedStyle.codeBgColor ?? "F5F5F5";
+
   slide.addText(content.code, {
     ...baseOpts,
-    fontFace: "Courier New",
+    fontFace: monoFont,
     fontSize: (baseOpts.fontSize ?? 14) - 4,
-    fill: { color: "F5F5F5" },
+    fill: { color: normalizeColor(codeBg) },
   });
 }
 

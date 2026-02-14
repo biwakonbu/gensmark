@@ -100,7 +100,10 @@ export class PptxRenderer implements Renderer {
         return { path: bg.path };
       case "gradient":
         // pptxgenjs v4 はグラデーション背景の標準サポートが限定的
-        // 最初の色をフォールバックとして使用
+        // 最初の色をフォールバックとして使用し、警告を出力
+        console.warn(
+          `[gensmark] Gradient background is not fully supported by pptxgenjs. Falling back to solid color: ${bg.colors[0] ?? "#ffffff"}`,
+        );
         return { color: normalizeColor(bg.colors[0] ?? "#ffffff") };
     }
   }
@@ -176,6 +179,19 @@ export class PptxRenderer implements Renderer {
         });
         break;
     }
+  }
+
+  /** 内部状態をリセット (新しい pptxgenjs インスタンスを作成) */
+  reset(aspectRatio?: AspectRatio): void {
+    const layout = aspectRatio ? ASPECT_RATIO_LAYOUT[aspectRatio] : this.pptx.layout;
+    this.pptx = new PptxGenJS();
+    this.pptx.layout = layout ?? "LAYOUT_16x9";
+  }
+
+  /** リソースを解放 */
+  dispose(): void {
+    // pptxgenjs に明示的な破棄は不要だが、参照をクリア
+    this.pptx = new PptxGenJS();
   }
 
   /** バイナリ出力を生成 */
