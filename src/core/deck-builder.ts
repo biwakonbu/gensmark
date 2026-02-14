@@ -24,7 +24,6 @@ export class DeckBuilder {
   private slides: SlideContent[] = [];
   private layoutEngine: LayoutEngine;
   private userRenderer: Renderer | undefined;
-  private autoRenderer: Renderer | undefined;
   readonly aspectRatio: AspectRatio;
 
   constructor(options: DeckBuilderOptions) {
@@ -114,14 +113,18 @@ export class DeckBuilder {
     return computed;
   }
 
-  /** レンダラーの取得 (遅延ロード) */
+  /** レンダラーの取得 (遅延ロード)
+   *  返却後に setMaster() -> renderSlides() の順で呼ばれることを前提とする。
+   *  reset() は setMaster() の前に呼ばれ、内部状態をクリアする。 */
   private async getRenderer(): Promise<Renderer> {
-    // ユーザー提供レンダラーがあればそれを使う
-    if (this.userRenderer) return this.userRenderer;
+    // ユーザー提供レンダラーがあればそれを使う (複数回 build() 対応)
+    if (this.userRenderer) {
+      this.userRenderer.reset?.();
+      return this.userRenderer;
+    }
 
     // 自動生成レンダラーは毎回新しいインスタンスを作成 (複数回 build() で重複スライドを防止)
     const { PptxRenderer } = await import("../renderer/pptx/pptx-renderer.ts");
-    this.autoRenderer = new PptxRenderer(this.aspectRatio);
-    return this.autoRenderer;
+    return new PptxRenderer(this.aspectRatio);
   }
 }

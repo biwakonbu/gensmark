@@ -19,4 +19,7 @@ export interface Renderer {
 
   /** リソースを解放 (任意実装) */
   dispose?(): void;
+
+  /** 内部状態をリセット (複数回 build() 対応、任意実装) */
+  reset?(): void;
 }

@@ -41,6 +41,7 @@ const testMaster: SlideMaster = {
 class MockRenderer implements Renderer {
   masterSet = false;
   renderedSlides: ComputedSlide[] = [];
+  resetCount = 0;
 
   setMaster(): void {
     this.masterSet = true;
@@ -48,6 +49,12 @@ class MockRenderer implements Renderer {
 
   renderSlides(slides: ComputedSlide[]): void {
     this.renderedSlides = slides;
+  }
+
+  reset(): void {
+    this.resetCount++;
+    this.masterSet = false;
+    this.renderedSlides = [];
   }
 
   async toBuffer(): Promise<ArrayBuffer> {
@@ -191,6 +198,22 @@ describe("DeckBuilder", () => {
       aspectRatio: "4:3",
     });
     expect(deck.aspectRatio).toBe("4:3");
+  });
+
+  test("build() を複数回呼ぶと userRenderer の reset() が呼ばれる", async () => {
+    const renderer = new MockRenderer();
+    const deck = new DeckBuilder({ master: testMaster, renderer });
+
+    deck.slide({
+      layout: "title-slide",
+      data: { title: "Title", subtitle: "Subtitle" },
+    });
+
+    await deck.build();
+    expect(renderer.resetCount).toBe(1);
+
+    await deck.build();
+    expect(renderer.resetCount).toBe(2);
   });
 
   test("スライドメモが保持される", async () => {
