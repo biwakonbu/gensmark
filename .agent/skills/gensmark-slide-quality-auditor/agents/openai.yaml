@@ -1,0 +1,4 @@
+interface:
+  display_name: "gensmark スライド品質監査"
+  short_description: "商用品質へ向けた品質ゲート/visual回帰/自動修正"
+  default_prompt: "Use $gensmark-slide-quality-auditor を使い、gensmark の lint/test/visual と strict 品質ゲートを実行し、失敗原因の一次ソースを示して修正パッチとテストを作成して。"
