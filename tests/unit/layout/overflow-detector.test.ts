@@ -4,8 +4,7 @@ import { OverflowDetector } from "../../../src/layout/overflow-detector.ts";
 import { TextMeasurer } from "../../../src/layout/text-measurer.ts";
 import type { BulletList } from "../../../src/types/content.ts";
 import type { PlaceholderDef } from "../../../src/types/master.ts";
-
-const ARIAL_PATH = "/System/Library/Fonts/Supplemental/Arial.ttf";
+import { TEST_FONT_PATH } from "../../helpers/font-path.ts";
 
 describe("OverflowDetector", () => {
   let measurer: TextMeasurer;
@@ -15,7 +14,7 @@ describe("OverflowDetector", () => {
   beforeAll(async () => {
     measurer = new TextMeasurer();
     detector = new OverflowDetector(measurer);
-    font = await measurer.loadFont(ARIAL_PATH);
+    font = await measurer.loadFont(TEST_FONT_PATH);
   });
 
   // テスト用のプレースホルダー定義
@@ -32,17 +31,28 @@ describe("OverflowDetector", () => {
     };
   }
 
+  // デフォルトの fontSize と lineSpacing
+  const DEFAULT_FONT_SIZE = 18;
+  const DEFAULT_LINE_SPACING = 1.2;
+
   describe("テキストオーバーフロー検知", () => {
     test("収まるテキストはバリデーション空", () => {
       const ph = makePlaceholder();
-      const result = detector.detect(ph, "Short text", font, 0);
+      const result = detector.detect(
+        ph,
+        "Short text",
+        font,
+        0,
+        DEFAULT_FONT_SIZE,
+        DEFAULT_LINE_SPACING,
+      );
       expect(result.validations).toHaveLength(0);
       expect(result.computedFontSize).toBe(18);
     });
 
     test("空テキストはバリデーション空", () => {
       const ph = makePlaceholder();
-      const result = detector.detect(ph, "", font, 0);
+      const result = detector.detect(ph, "", font, 0, DEFAULT_FONT_SIZE, DEFAULT_LINE_SPACING);
       expect(result.validations).toHaveLength(0);
     });
 
@@ -52,7 +62,14 @@ describe("OverflowDetector", () => {
         constraints: { overflow: "error" },
       });
       const longText = "This is a very long text. ".repeat(50);
-      const result = detector.detect(ph, longText, font, 0);
+      const result = detector.detect(
+        ph,
+        longText,
+        font,
+        0,
+        DEFAULT_FONT_SIZE,
+        DEFAULT_LINE_SPACING,
+      );
 
       expect(result.validations.length).toBeGreaterThan(0);
       expect(result.validations[0]?.severity).toBe("error");
@@ -67,20 +84,28 @@ describe("OverflowDetector", () => {
         constraints: { overflow: "warn" },
       });
       const longText = "This is a very long text. ".repeat(50);
-      const result = detector.detect(ph, longText, font, 0);
+      const result = detector.detect(
+        ph,
+        longText,
+        font,
+        0,
+        DEFAULT_FONT_SIZE,
+        DEFAULT_LINE_SPACING,
+      );
 
       expect(result.validations.length).toBeGreaterThan(0);
       expect(result.validations[0]?.severity).toBe("warning");
     });
 
     test("オーバーフロー (overflow: 'shrink') はフォントサイズを縮小", () => {
+      const fontSize = 24;
       const ph = makePlaceholder({
         height: 1.0,
-        style: { fontSize: 24 },
+        style: { fontSize },
         constraints: { overflow: "shrink", minFontSize: 10 },
       });
       const mediumText = "This text needs to be shrunk to fit. ".repeat(10);
-      const result = detector.detect(ph, mediumText, font, 0);
+      const result = detector.detect(ph, mediumText, font, 0, fontSize, DEFAULT_LINE_SPACING);
 
       // shrink で収まればバリデーションは空
       if (result.validations.length === 0) {
@@ -90,14 +115,15 @@ describe("OverflowDetector", () => {
     });
 
     test("shrink でも最小サイズで収まらなければエラー", () => {
+      const fontSize = 24;
       const ph = makePlaceholder({
         height: 0.15,
         width: 1,
-        style: { fontSize: 24 },
+        style: { fontSize },
         constraints: { overflow: "shrink", minFontSize: 12 },
       });
       const longText = "Long overflow text that cannot fit. ".repeat(30);
-      const result = detector.detect(ph, longText, font, 0);
+      const result = detector.detect(ph, longText, font, 0, fontSize, DEFAULT_LINE_SPACING);
 
       expect(result.validations.length).toBeGreaterThan(0);
       expect(result.validations[0]?.severity).toBe("error");
@@ -110,7 +136,14 @@ describe("OverflowDetector", () => {
         constraints: { overflow: "truncate" },
       });
       const longText = "Truncatable text. ".repeat(50);
-      const result = detector.detect(ph, longText, font, 0);
+      const result = detector.detect(
+        ph,
+        longText,
+        font,
+        0,
+        DEFAULT_FONT_SIZE,
+        DEFAULT_LINE_SPACING,
+      );
 
       expect(result.validations.length).toBeGreaterThan(0);
       expect(result.validations[0]?.severity).toBe("warning");
@@ -122,20 +155,28 @@ describe("OverflowDetector", () => {
         constraints: { maxLines: 1, overflow: "error" },
       });
       const twoLineText = "First line\nSecond line";
-      const result = detector.detect(ph, twoLineText, font, 0);
+      const result = detector.detect(
+        ph,
+        twoLineText,
+        font,
+        0,
+        DEFAULT_FONT_SIZE,
+        DEFAULT_LINE_SPACING,
+      );
 
       expect(result.validations.length).toBeGreaterThan(0);
       expect(result.validations[0]?.message).toContain("max lines");
     });
 
     test("overflowDetail に suggestedFontSize が含まれる", () => {
+      const fontSize = 24;
       const ph = makePlaceholder({
         height: 0.5,
-        style: { fontSize: 24 },
+        style: { fontSize },
         constraints: { overflow: "error", minFontSize: 8 },
       });
       const text = "Text that overflows at 24pt but fits at smaller size. ".repeat(5);
-      const result = detector.detect(ph, text, font, 0);
+      const result = detector.detect(ph, text, font, 0, fontSize, DEFAULT_LINE_SPACING);
 
       if (result.validations.length > 0) {
         const detail = result.validations[0]?.overflowDetail;
@@ -152,7 +193,7 @@ describe("OverflowDetector", () => {
         type: "bullet",
         items: [{ text: "Item 1" }, { text: "Item 2" }],
       };
-      const result = detector.detect(ph, bullet, font, 0);
+      const result = detector.detect(ph, bullet, font, 0, DEFAULT_FONT_SIZE, DEFAULT_LINE_SPACING);
       expect(result.validations).toHaveLength(0);
     });
 
@@ -167,16 +208,17 @@ describe("OverflowDetector", () => {
           text: `Item ${i + 1}: This is a longer bullet point text`,
         })),
       };
-      const result = detector.detect(ph, bullet, font, 0);
+      const result = detector.detect(ph, bullet, font, 0, DEFAULT_FONT_SIZE, DEFAULT_LINE_SPACING);
 
       expect(result.validations.length).toBeGreaterThan(0);
       expect(result.validations[0]?.severity).toBe("error");
     });
 
     test("箇条書き shrink", () => {
+      const fontSize = 18;
       const ph = makePlaceholder({
         height: 2,
-        style: { fontSize: 18 },
+        style: { fontSize },
         constraints: { overflow: "shrink", minFontSize: 10 },
       });
       const bullet: BulletList = {
@@ -185,7 +227,7 @@ describe("OverflowDetector", () => {
           text: `Item ${i + 1}: Description text here`,
         })),
       };
-      const result = detector.detect(ph, bullet, font, 0);
+      const result = detector.detect(ph, bullet, font, 0, fontSize, DEFAULT_LINE_SPACING);
 
       // 縮小して収まったか、エラーになったか
       if (result.validations.length === 0) {
@@ -197,7 +239,14 @@ describe("OverflowDetector", () => {
   describe("TextContent の処理", () => {
     test("TextContent (string value) の検知", () => {
       const ph = makePlaceholder();
-      const result = detector.detect(ph, { type: "text", value: "Simple text content" }, font, 0);
+      const result = detector.detect(
+        ph,
+        { type: "text", value: "Simple text content" },
+        font,
+        0,
+        DEFAULT_FONT_SIZE,
+        DEFAULT_LINE_SPACING,
+      );
       expect(result.validations).toHaveLength(0);
     });
 
@@ -211,6 +260,8 @@ describe("OverflowDetector", () => {
         },
         font,
         0,
+        DEFAULT_FONT_SIZE,
+        DEFAULT_LINE_SPACING,
       );
       expect(result.validations).toHaveLength(0);
     });
@@ -224,6 +275,8 @@ describe("OverflowDetector", () => {
         { type: "code", code: "const x = 1;\nconsole.log(x);", language: "typescript" },
         font,
         0,
+        DEFAULT_FONT_SIZE,
+        DEFAULT_LINE_SPACING,
       );
       expect(result.validations).toHaveLength(0);
     });

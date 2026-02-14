@@ -1,10 +1,7 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import type opentype from "opentype.js";
 import { TextMeasurer } from "../../../src/layout/text-measurer.ts";
-
-// テスト用フォント (macOS システムフォント)
-const ARIAL_PATH = "/System/Library/Fonts/Supplemental/Arial.ttf";
-const ARIAL_BOLD_PATH = "/System/Library/Fonts/Supplemental/Arial Bold.ttf";
+import { TEST_FONT_BOLD_PATH, TEST_FONT_PATH } from "../../helpers/font-path.ts";
 
 describe("TextMeasurer", () => {
   let measurer: TextMeasurer;
@@ -12,25 +9,25 @@ describe("TextMeasurer", () => {
 
   beforeAll(async () => {
     measurer = new TextMeasurer();
-    font = await measurer.loadFont(ARIAL_PATH);
+    font = await measurer.loadFont(TEST_FONT_PATH);
   });
 
   describe("loadFont", () => {
     test("フォントファイルをロードできる", async () => {
-      const f = await measurer.loadFont(ARIAL_PATH);
+      const f = await measurer.loadFont(TEST_FONT_PATH);
       expect(f).toBeDefined();
       expect(f.unitsPerEm).toBeGreaterThan(0);
     });
 
     test("キャッシュが効く (同一オブジェクトを返す)", async () => {
-      const f1 = await measurer.loadFont(ARIAL_PATH);
-      const f2 = await measurer.loadFont(ARIAL_PATH);
+      const f1 = await measurer.loadFont(TEST_FONT_PATH);
+      const f2 = await measurer.loadFont(TEST_FONT_PATH);
       expect(f1).toBe(f2);
     });
 
     test("異なるフォントは別オブジェクト", async () => {
-      const f1 = await measurer.loadFont(ARIAL_PATH);
-      const f2 = await measurer.loadFont(ARIAL_BOLD_PATH);
+      const f1 = await measurer.loadFont(TEST_FONT_PATH);
+      const f2 = await measurer.loadFont(TEST_FONT_BOLD_PATH);
       expect(f1).not.toBe(f2);
     });
   });
@@ -180,9 +177,9 @@ describe("TextMeasurer", () => {
 
   describe("clearCache", () => {
     test("キャッシュクリア後は再ロードされる", async () => {
-      const f1 = await measurer.loadFont(ARIAL_PATH);
+      const f1 = await measurer.loadFont(TEST_FONT_PATH);
       measurer.clearCache();
-      const f2 = await measurer.loadFont(ARIAL_PATH);
+      const f2 = await measurer.loadFont(TEST_FONT_PATH);
       // 別オブジェクト (再ロードされた)
       expect(f1).not.toBe(f2);
     });

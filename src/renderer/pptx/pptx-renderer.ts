@@ -3,6 +3,7 @@ import type { ComputedSlide } from "../../types/layout.ts";
 import type { AspectRatio, BackgroundDef, FixedElement, SlideMaster } from "../../types/master.ts";
 import type { Renderer } from "../renderer.ts";
 import { addTextElement } from "./pptx-element-mapper.ts";
+import { normalizeColor } from "./utils.ts";
 
 // pptxgenjs ベースの PPTX レンダラー
 
@@ -187,9 +188,4 @@ export class PptxRenderer implements Renderer {
   async toFile(path: string): Promise<void> {
     await this.pptx.writeFile({ fileName: path });
   }
-}
-
-/** 色コードの # を除去 */
-function normalizeColor(color: string): string {
-  return color.startsWith("#") ? color.slice(1) : color;
 }

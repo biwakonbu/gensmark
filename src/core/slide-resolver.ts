@@ -1,4 +1,4 @@
-import type { PlaceholderValue, SlideContent } from "../types/content.ts";
+import type { SlideContent } from "../types/content.ts";
 import type { ComputedElement, ComputedSlide } from "../types/layout.ts";
 import type { PlaceholderDef, PlaceholderStyle, SlideMaster } from "../types/master.ts";
 import type { ValidationResult } from "../types/validation.ts";
@@ -39,12 +39,6 @@ function resolveStyle(
     ...(placeholder.type === "title" ? { fontFace: master.theme.fonts.heading } : {}),
     ...placeholder.style,
   };
-}
-
-/** 文字列値を PlaceholderValue に正規化 */
-function normalizeValue(value: PlaceholderValue): PlaceholderValue {
-  if (typeof value === "string") return value;
-  return value;
 }
 
 /** SlideContent を ComputedSlide に解決 */
@@ -103,7 +97,7 @@ export function resolveSlide(
 
     elements.push({
       placeholder,
-      value: normalizeValue(value),
+      value,
       resolvedStyle,
       computedFontSize: resolvedStyle.fontSize,
     });

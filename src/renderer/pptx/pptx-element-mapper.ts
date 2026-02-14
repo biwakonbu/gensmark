@@ -8,6 +8,7 @@ import type {
   TextContent,
 } from "../../types/content.ts";
 import type { ComputedElement } from "../../types/layout.ts";
+import { normalizeColor } from "./utils.ts";
 
 // ComputedElement を pptxgenjs の API 呼び出しに変換
 
@@ -154,7 +155,7 @@ function addTable(
       text: h,
       options: {
         bold: true,
-        fill: { color: normalizeColor(content.style?.headerFill ?? style.color) },
+        fill: { color: normalizeColor(content.style?.headerFill ?? "#4472C4") },
         color: normalizeColor(content.style?.headerColor ?? "#ffffff"),
         fontSize: style.fontSize - 2,
         align: "center" as PptxGenJS.HAlign,
@@ -220,11 +221,6 @@ function addCode(
     fontSize: (baseOpts.fontSize ?? 14) - 4,
     fill: { color: "F5F5F5" },
   });
-}
-
-/** 色コードを正規化 (# を除去) */
-function normalizeColor(color: string): string {
-  return color.startsWith("#") ? color.slice(1) : color;
 }
 
 /** padding オブジェクトを pptxgenjs の margin に変換 (インチ) */

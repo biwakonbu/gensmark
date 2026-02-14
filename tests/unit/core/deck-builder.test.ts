@@ -107,7 +107,7 @@ describe("DeckBuilder", () => {
     expect(result.isValid).toBe(true);
   });
 
-  test("不明なレイアウトでバリデーションエラー", async () => {
+  test("不明なレイアウトでバリデーションエラー (レンダリングされない)", async () => {
     const renderer = new MockRenderer();
     const deck = new DeckBuilder({ master: testMaster, renderer });
 
@@ -120,6 +120,11 @@ describe("DeckBuilder", () => {
     expect(result.isValid).toBe(false);
     expect(result.validations).toHaveLength(1);
     expect(result.validations[0]?.type).toBe("unknown-layout");
+    // エラー時はレンダラーが呼ばれない
+    expect(renderer.masterSet).toBe(false);
+    expect(renderer.renderedSlides).toHaveLength(0);
+    // toPptxFile() は例外を投げる
+    expect(result.toPptxFile("out.pptx")).rejects.toThrow("validation errors exist");
   });
 
   test("不明なプレースホルダーで警告", async () => {

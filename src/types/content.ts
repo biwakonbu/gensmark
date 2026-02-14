@@ -25,8 +25,6 @@ export interface TextContent {
 export interface BulletItem {
   text: string;
   style?: TextStyle;
-  /** ネストレベル (0 = トップレベル) */
-  level?: number;
   /** サブアイテム */
   children?: BulletItem[];
 }

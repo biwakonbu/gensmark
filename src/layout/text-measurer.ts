@@ -32,15 +32,15 @@ const LINE_START_PROHIBITED =
 // 日本語禁則処理: 行末禁止文字
 const LINE_END_PROHIBITED = /[（〔［｛〈《「『【'"（[({]$/;
 
-// CJK 文字の範囲判定
+// CJK 文字の範囲判定 (サロゲートペア対応)
 function isCJK(char: string): boolean {
-  const code = char.charCodeAt(0);
+  const code = char.codePointAt(0);
   if (code === undefined) return false;
   return (
     (code >= 0x3000 && code <= 0x9fff) || // CJK
     (code >= 0xf900 && code <= 0xfaff) || // CJK 互換
     (code >= 0xff00 && code <= 0xffef) || // 全角
-    code >= 0x20000 // CJK 拡張
+    code >= 0x20000 // CJK 拡張 (サロゲートペア領域)
   );
 }
 
@@ -146,25 +146,34 @@ export class TextMeasurer {
     let i = 0;
 
     while (i < text.length) {
-      const char = text[i]!;
+      // サロゲートペア対応: コードポイント単位で文字を取得
+      const code = text.codePointAt(i)!;
+      const charLen = code > 0xffff ? 2 : 1;
+      const char = text.slice(i, i + charLen);
 
       if (isCJK(char)) {
         // CJK 文字: 1文字ずつ処理
         const charWidth = this.measureTextWidth(char, font, fontSize);
 
         if (currentWidth + charWidth > maxWidthPt && currentLine.length > 0) {
-          // 禁則処理: 次の文字が行頭禁止文字なら現在の文字と一緒に次行へ
-          if (i + 1 < text.length && LINE_START_PROHIBITED.test(text[i + 1]!)) {
-            // 現在行末の文字を次行に送る
+          // 次の文字を先読み (サロゲートペア考慮)
+          const nextIdx = i + charLen;
+          const nextCode = nextIdx < text.length ? text.codePointAt(nextIdx) : undefined;
+          const nextCharLen = nextCode !== undefined && nextCode > 0xffff ? 2 : 1;
+          const nextChar = nextIdx < text.length ? text.slice(nextIdx, nextIdx + nextCharLen) : "";
+
+          if (nextChar && LINE_START_PROHIBITED.test(nextChar)) {
+            // 禁則処理: 次の文字が行頭禁止文字なら、現在の文字ごと次行に送る
             lines.push(currentLine);
             currentLine = char;
             currentWidth = charWidth;
           } else if (LINE_END_PROHIBITED.test(char)) {
-            // 行末禁止文字は次行の先頭に
+            // 禁則処理: 行末禁止文字は次行の先頭に送る
             lines.push(currentLine);
             currentLine = char;
             currentWidth = charWidth;
           } else {
+            // 通常の改行
             lines.push(currentLine);
             currentLine = char;
             currentWidth = charWidth;
@@ -173,7 +182,7 @@ export class TextMeasurer {
           currentLine += char;
           currentWidth += charWidth;
         }
-        i++;
+        i += charLen;
       } else if (char === " " || char === "\t") {
         // 空白文字
         const charWidth = this.measureTextWidth(char, font, fontSize);
@@ -183,15 +192,13 @@ export class TextMeasurer {
       } else {
         // ラテン文字: 単語単位で処理
         let word = "";
-        while (
-          i < text.length &&
-          text[i] !== " " &&
-          text[i] !== "\t" &&
-          text[i] !== "\n" &&
-          !isCJK(text[i]!)
-        ) {
-          word += text[i];
-          i++;
+        while (i < text.length) {
+          const wCode = text.codePointAt(i)!;
+          const wCharLen = wCode > 0xffff ? 2 : 1;
+          const wChar = text.slice(i, i + wCharLen);
+          if (wChar === " " || wChar === "\t" || wChar === "\n" || isCJK(wChar)) break;
+          word += wChar;
+          i += wCharLen;
         }
 
         const wordWidth = this.measureTextWidth(word, font, fontSize);

@@ -42,7 +42,14 @@ export class LayoutEngine {
 
       try {
         const font = await this.measurer.loadFont(fontPath);
-        const result = this.detector.detect(element.placeholder, element.value, font, slide.index);
+        const result = this.detector.detect(
+          element.placeholder,
+          element.value,
+          font,
+          slide.index,
+          element.resolvedStyle.fontSize,
+          element.resolvedStyle.lineSpacing ?? 1.2,
+        );
 
         validations.push(...result.validations);
         // shrink で調整されたフォントサイズを反映

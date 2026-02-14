@@ -7,6 +7,9 @@ import type { TextMeasurer } from "./text-measurer.ts";
 
 // オーバーフロー検知
 
+/** パディング未指定時のデフォルト値 (インチ) */
+const DEFAULT_PADDING = 0.05;
+
 /** オーバーフロー検知結果 */
 export interface DetectionResult {
   /** バリデーション結果 (問題がない場合は空) */
@@ -21,10 +24,10 @@ function getEffectiveSize(placeholder: PlaceholderDef): {
   height: number;
 } {
   const padding = placeholder.style?.padding;
-  const padLeft = padding?.left ?? 0.05;
-  const padRight = padding?.right ?? 0.05;
-  const padTop = padding?.top ?? 0.05;
-  const padBottom = padding?.bottom ?? 0.05;
+  const padLeft = padding?.left ?? DEFAULT_PADDING;
+  const padRight = padding?.right ?? DEFAULT_PADDING;
+  const padTop = padding?.top ?? DEFAULT_PADDING;
+  const padBottom = padding?.bottom ?? DEFAULT_PADDING;
 
   return {
     width: placeholder.width - padLeft - padRight,
@@ -57,9 +60,9 @@ export class OverflowDetector {
     value: PlaceholderValue,
     font: opentype.Font,
     slideIndex: number,
+    fontSize: number,
+    lineSpacing: number,
   ): DetectionResult {
-    const fontSize = placeholder.style?.fontSize ?? 18;
-    const lineSpacing = placeholder.style?.lineSpacing ?? 1.2;
     const constraints = placeholder.constraints;
     const overflow = constraints?.overflow ?? "warn";
     const maxFontSize = constraints?.maxFontSize ?? fontSize;

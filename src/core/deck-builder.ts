@@ -66,15 +66,31 @@ export class DeckBuilder {
 
     const hasErrors = allValidations.some((v) => v.severity === "error");
 
+    // エラーがある場合はレンダリングをスキップ
+    if (hasErrors) {
+      return {
+        isValid: false,
+        validations: allValidations,
+        toPptxFile: async () => {
+          throw new Error(
+            "Cannot generate PPTX: validation errors exist. Fix all errors before calling toPptxFile().",
+          );
+        },
+      };
+    }
+
     // レンダラーでレンダリング
     const renderer = await this.getRenderer();
     renderer.setMaster(this.master);
     renderer.renderSlides(computedSlides);
 
+    // バッファを生成
+    const pptxBuffer = await renderer.toBuffer();
+
     return {
-      isValid: !hasErrors,
+      isValid: true,
       validations: allValidations,
-      pptxBuffer: undefined, // toPptxFile 呼び出し時に生成
+      pptxBuffer,
       toPptxFile: async (path: string) => {
         await renderer.toFile(path);
       },
