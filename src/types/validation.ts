@@ -7,6 +7,8 @@ export type ValidationSeverity = "error" | "warning" | "info";
 export type ValidationType =
   | "overflow"
   | "missing-placeholder"
+  | "type-mismatch"
+  | "asset-error"
   | "unknown-layout"
   | "unknown-placeholder"
   | "font-not-found"

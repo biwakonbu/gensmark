@@ -1,10 +1,50 @@
+import { existsSync } from "node:fs";
 import type { ComputedSlide } from "../types/layout.ts";
-import type { SlideMaster } from "../types/master.ts";
+import type { PlaceholderType, SlideMaster } from "../types/master.ts";
 import type { ValidationResult } from "../types/validation.ts";
 import { OverflowDetector } from "./overflow-detector.ts";
 import { TextMeasurer } from "./text-measurer.ts";
 
 // レイアウト計算の統合エンジン
+
+/** システムフォント候補 (計測用フォールバック) */
+const SYSTEM_FONTS_REGULAR = [
+  // macOS
+  "/System/Library/Fonts/Supplemental/Arial.ttf",
+  "/Library/Fonts/Arial.ttf",
+  // Linux
+  "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+  "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+  // Windows (WSL)
+  "/mnt/c/Windows/Fonts/arial.ttf",
+];
+
+const SYSTEM_FONTS_BOLD = [
+  "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+  "/Library/Fonts/Arial Bold.ttf",
+  "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+  "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+  "/mnt/c/Windows/Fonts/arialbd.ttf",
+];
+
+const SYSTEM_MONO_FONTS_REGULAR = [
+  // macOS
+  "/System/Library/Fonts/Supplemental/Courier New.ttf",
+  "/Library/Fonts/Courier New.ttf",
+  // Linux
+  "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
+  "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+  // Windows (WSL)
+  "/mnt/c/Windows/Fonts/cour.ttf",
+];
+
+const SYSTEM_MONO_FONTS_BOLD = [
+  "/System/Library/Fonts/Supplemental/Courier New Bold.ttf",
+  "/Library/Fonts/Courier New Bold.ttf",
+  "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf",
+  "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
+  "/mnt/c/Windows/Fonts/courbd.ttf",
+];
 
 /** レイアウトエンジン */
 export class LayoutEngine {
@@ -26,6 +66,7 @@ export class LayoutEngine {
         element.resolvedStyle.fontFace,
         element.resolvedStyle.bold,
         master,
+        element.placeholder.type,
       );
 
       if (!fontPath) {
@@ -73,19 +114,47 @@ export class LayoutEngine {
     fontFace: string,
     bold: boolean,
     master: SlideMaster,
+    placeholderType?: PlaceholderType,
   ): string | undefined {
     const fontPaths = master.theme.fontPaths;
-    if (!fontPaths) return undefined;
 
-    // heading/body フォントの判定
-    const isHeading = fontFace === master.theme.fonts.heading;
-    const isMono = fontFace === master.theme.fonts.mono;
+    // テーマに fontPaths が指定されている場合はそちらを優先
+    if (fontPaths) {
+      const monoFace = master.theme.fonts.mono ?? "Courier New";
+      const isMono = fontFace === monoFace;
+      // heading と body が同じフォント名の場合でも正しく判定するため、
+      // フォント名ではなくプレースホルダーの type で判定する
+      const isHeading = placeholderType === "title" || placeholderType === "subtitle";
 
-    if (isMono && fontPaths.mono) return fontPaths.mono;
-    if (isHeading) {
-      return bold && fontPaths.headingBold ? fontPaths.headingBold : fontPaths.heading;
+      if (isMono && fontPaths.mono) return fontPaths.mono;
+      if (isHeading) {
+        const resolved = bold && fontPaths.headingBold ? fontPaths.headingBold : fontPaths.heading;
+        if (resolved) return resolved;
+      } else {
+        const resolved = bold && fontPaths.bodyBold ? fontPaths.bodyBold : fontPaths.body;
+        if (resolved) return resolved;
+      }
     }
-    return bold && fontPaths.bodyBold ? fontPaths.bodyBold : fontPaths.body;
+
+    // fontPaths 未設定時はシステムフォントにフォールバック
+    const monoFace = master.theme.fonts.mono ?? "Courier New";
+    const isMono = fontFace === monoFace;
+    return isMono ? this.findSystemMonoFont(bold) : this.findSystemFont(bold);
+  }
+
+  /** システムフォントを検索 (計測用フォールバック) */
+  private findSystemFont(bold: boolean): string | undefined {
+    if (bold) {
+      return SYSTEM_FONTS_BOLD.find((p) => existsSync(p));
+    }
+    return SYSTEM_FONTS_REGULAR.find((p) => existsSync(p));
+  }
+
+  private findSystemMonoFont(bold: boolean): string | undefined {
+    if (bold) {
+      return SYSTEM_MONO_FONTS_BOLD.find((p) => existsSync(p));
+    }
+    return SYSTEM_MONO_FONTS_REGULAR.find((p) => existsSync(p));
   }
 
   /** キャッシュクリア */

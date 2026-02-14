@@ -13,17 +13,26 @@ const ASPECT_RATIO_LAYOUT: Record<AspectRatio, string> = {
   "4:3": "LAYOUT_4x3",
 };
 
+const SLIDE_DIMENSIONS: Record<AspectRatio, { w: number; h: number }> = {
+  "16:9": { w: 13.33, h: 7.5 },
+  "4:3": { w: 10, h: 7.5 },
+};
+
 /** PptxRenderer: ComputedSlide[] を PPTX に変換 */
 export class PptxRenderer implements Renderer {
   private pptx: PptxGenJS;
+  private master?: SlideMaster;
+  private aspectRatio: AspectRatio;
 
   constructor(aspectRatio: AspectRatio = "16:9") {
     this.pptx = new PptxGenJS();
-    this.pptx.layout = ASPECT_RATIO_LAYOUT[aspectRatio] ?? "LAYOUT_16x9";
+    this.aspectRatio = aspectRatio;
+    this.pptx.layout = ASPECT_RATIO_LAYOUT[this.aspectRatio] ?? "LAYOUT_16x9";
   }
 
   /** スライドマスターを設定 */
   setMaster(master: SlideMaster): void {
+    this.master = master;
     // テーマフォントを設定
     this.pptx.theme = {
       headFontFace: master.theme.fonts.heading,
@@ -64,8 +73,9 @@ export class PptxRenderer implements Renderer {
 
   /** 1スライドをレンダリング */
   private renderSlide(computed: ComputedSlide): void {
+    const masterName = this.getMasterName(computed.layoutName);
     const slide = this.pptx.addSlide({
-      masterName: undefined, // マスター名はスライドごとに自動適用しない (背景は手動で)
+      masterName,
     });
 
     // 背景設定
@@ -75,14 +85,38 @@ export class PptxRenderer implements Renderer {
 
     // 固定要素
     if (computed.fixedElements) {
+      const masterFixedKeys = new Set(
+        (this.master?.layouts[computed.layoutName]?.fixedElements ?? []).map((el) =>
+          this.fixedElementKey(el),
+        ),
+      );
       for (const el of computed.fixedElements) {
-        this.renderFixedElement(slide, el);
+        // 既にスライドマスター側で描画される固定要素は二重描画しない
+        if (!masterFixedKeys.has(this.fixedElementKey(el))) {
+          this.renderFixedElement(slide, el);
+        }
       }
     }
 
     // 各要素をレンダリング
     for (const element of computed.elements) {
       addTextElement(slide, element);
+    }
+
+    // ページ番号 (title-slide, section-header, end-slide 以外)
+    if (!["title-slide", "section-header", "end-slide"].includes(computed.layoutName)) {
+      const textColor = this.master?.theme.colors.text ?? "#666666";
+      const dims = SLIDE_DIMENSIONS[this.aspectRatio] ?? SLIDE_DIMENSIONS["16:9"];
+      slide.slideNumber = {
+        // % 指定 + 右寄せで、4:3/16:9 両対応でスライド外にはみ出しにくくする
+        x: "88%",
+        y: "94%",
+        w: "10%",
+        h: Math.min(0.3, dims.h * 0.04),
+        fontSize: 9,
+        color: normalizeColor(textColor),
+        align: "right",
+      };
     }
 
     // スライドメモ
@@ -181,17 +215,48 @@ export class PptxRenderer implements Renderer {
     }
   }
 
+  /** レイアウト名からスライドマスター名を解決 */
+  private getMasterName(layoutName: string): string | undefined {
+    if (!this.master) return undefined;
+    if (!this.master.layouts[layoutName]) return undefined;
+    return `${this.master.name}_${layoutName}`;
+  }
+
+  private fixedElementKey(el: FixedElement): string {
+    // FixedElement はプレーンオブジェクトの想定。キー順の揺れを避けて簡易正規化する。
+    // 浮動小数点の精度問題を回避するため、座標値を小数第3位で丸める
+    const r = (n: number) => Math.round(n * 1000) / 1000;
+    const base = {
+      type: el.type,
+      x: r(el.x),
+      y: r(el.y),
+      width: r(el.width),
+      height: r(el.height),
+      path: el.path ?? "",
+      color: el.color ?? "",
+      lineWidth: el.lineWidth ?? 0,
+    };
+    return JSON.stringify(base);
+  }
+
   /** 内部状態をリセット (新しい pptxgenjs インスタンスを作成) */
   reset(aspectRatio?: AspectRatio): void {
-    const layout = aspectRatio ? ASPECT_RATIO_LAYOUT[aspectRatio] : this.pptx.layout;
+    const nextAspectRatio = aspectRatio ?? this.aspectRatio;
+    this.aspectRatio = nextAspectRatio;
+    const layout = ASPECT_RATIO_LAYOUT[nextAspectRatio] ?? this.pptx.layout;
     this.pptx = new PptxGenJS();
     this.pptx.layout = layout ?? "LAYOUT_16x9";
+    // マスター定義を新しいインスタンスに再適用
+    if (this.master) {
+      this.setMaster(this.master);
+    }
   }
 
   /** リソースを解放 */
   dispose(): void {
     // pptxgenjs に明示的な破棄は不要だが、参照をクリア
     this.pptx = new PptxGenJS();
+    this.master = undefined;
   }
 
   /** バイナリ出力を生成 */

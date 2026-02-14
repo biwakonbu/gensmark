@@ -7,6 +7,7 @@ import type { PlaceholderDef, PlaceholderOverrides } from "../types/master.ts";
 const SLIDE_W = 13.33;
 const MARGIN = 0.75;
 const CONTENT_W = SLIDE_W - MARGIN * 2; // 11.83
+const DEFAULT_PADDING = 0.05; // inch (OverflowDetector と揃える)
 
 /** デフォルトのタイトルプレースホルダー */
 function title(overrides?: PlaceholderOverrides): PlaceholderDef {
@@ -22,6 +23,12 @@ function title(overrides?: PlaceholderOverrides): PlaceholderDef {
       bold: true,
       align: "left",
       valign: "middle",
+      padding: {
+        top: DEFAULT_PADDING,
+        right: DEFAULT_PADDING,
+        bottom: DEFAULT_PADDING,
+        left: DEFAULT_PADDING,
+      },
       ...overrides?.style,
     },
     constraints: {
@@ -47,6 +54,12 @@ function subtitle(overrides?: PlaceholderOverrides): PlaceholderDef {
       color: "#666666",
       align: "left",
       valign: "middle",
+      padding: {
+        top: DEFAULT_PADDING,
+        right: DEFAULT_PADDING,
+        bottom: DEFAULT_PADDING,
+        left: DEFAULT_PADDING,
+      },
       ...overrides?.style,
     },
     constraints: {
@@ -72,11 +85,17 @@ function body(overrides?: PlaceholderOverrides): PlaceholderDef {
       align: "left",
       valign: "top",
       lineSpacing: 1.4,
+      padding: {
+        top: DEFAULT_PADDING,
+        right: DEFAULT_PADDING,
+        bottom: DEFAULT_PADDING,
+        left: DEFAULT_PADDING,
+      },
       ...overrides?.style,
     },
     constraints: {
-      overflow: "warn",
-      minFontSize: 12,
+      overflow: "shrink",
+      minFontSize: 10,
       ...overrides?.constraints,
     },
   };

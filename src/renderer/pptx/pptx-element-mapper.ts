@@ -10,6 +10,9 @@ import type {
 import type { ComputedElement } from "../../types/layout.ts";
 import { normalizeColor } from "./utils.ts";
 
+/** テーブルセル内のフォントサイズオフセット (overflow-detector.ts と同期) */
+const TABLE_FONT_SIZE_OFFSET = 2;
+
 // ComputedElement を pptxgenjs の API 呼び出しに変換
 
 /** テキスト要素をスライドに追加 */
@@ -33,6 +36,7 @@ export function addTextElement(slide: PptxGenJS.Slide, element: ComputedElement)
     margin: paddingToMargin(style.padding) as PptxGenJS.Margin | undefined,
     lineSpacingMultiple: style.lineSpacing,
     autoFit: false,
+    lang: "ja-JP", // CJK テキストの折り返しルールを Keynote に適用させる
   };
 
   if (typeof value === "string") {
@@ -51,7 +55,7 @@ export function addTextElement(slide: PptxGenJS.Slide, element: ComputedElement)
       addImage(slide, value, ph);
       break;
     case "table":
-      addTable(slide, value, ph, style);
+      addTable(slide, value, ph, style, element);
       break;
     case "code":
       addCode(slide, value, baseOpts, element);
@@ -96,8 +100,9 @@ function addBulletList(
       textProps.push({
         text: item.text,
         options: {
-          bullet: content.ordered ? { type: "number", indent: level * 18 } : { indent: level * 18 },
+          bullet: content.ordered ? { type: "number" } : true,
           indentLevel: level,
+          breakLine: true,
           bold: item.style?.bold,
           italic: item.style?.italic,
           color: item.style?.color ? normalizeColor(item.style.color) : undefined,
@@ -145,9 +150,12 @@ function addTable(
   slide: PptxGenJS.Slide,
   content: TableContent,
   ph: ComputedElement["placeholder"],
-  style: ComputedElement["resolvedStyle"],
+  _style: ComputedElement["resolvedStyle"],
+  element: ComputedElement,
 ): void {
   const rows: PptxGenJS.TableRow[] = [];
+  // shrink 結果を反映したフォントサイズ
+  const tableFontSize = element.computedFontSize - TABLE_FONT_SIZE_OFFSET;
 
   // ヘッダー行
   if (content.headers) {
@@ -157,7 +165,7 @@ function addTable(
         bold: true,
         fill: { color: normalizeColor(content.style?.headerFill ?? "#4472C4") },
         color: normalizeColor(content.style?.headerColor ?? "#ffffff"),
-        fontSize: style.fontSize - 2,
+        fontSize: tableFontSize,
         align: "center" as PptxGenJS.HAlign,
       },
     }));
@@ -172,7 +180,7 @@ function addTable(
         return {
           text: cell,
           options: {
-            fontSize: style.fontSize - 2,
+            fontSize: tableFontSize,
             fill:
               content.style?.altRowFill && rowIdx % 2 === 1
                 ? { color: normalizeColor(content.style.altRowFill) }
@@ -187,7 +195,7 @@ function addTable(
           bold: cell.style?.bold,
           italic: cell.style?.italic,
           color: cell.style?.color ? normalizeColor(cell.style.color) : undefined,
-          fontSize: cell.style?.fontSize ?? style.fontSize - 2,
+          fontSize: cell.style?.fontSize ?? tableFontSize,
           fill: cell.fill ? { color: normalizeColor(cell.fill) } : undefined,
           colspan: cell.colSpan,
           rowspan: cell.rowSpan,
@@ -197,13 +205,24 @@ function addTable(
     rows.push(tableRow);
   }
 
+  // カラム数を取得して均等幅を計算
+  // Keynote はセル内部余白を PowerPoint より広く取るため、テーブル幅から余白分を差し引く
+  // 小さいプレースホルダーでは余白を比例縮小し、最低 1 インチのテーブル幅を保証
+  const numCols = content.headers?.length ?? content.rows[0]?.length ?? 1;
+  const tablePadding = Math.min(2.5, ph.width * 0.4);
+  const effectiveTableWidth = Math.max(ph.width - tablePadding, 1.0);
+  const colW: number[] = Array(numCols).fill(effectiveTableWidth / numCols);
+
   const tableOpts: PptxGenJS.TableProps = {
     x: ph.x,
     y: ph.y,
-    w: ph.width,
+    w: effectiveTableWidth,
+    colW,
     border: content.style?.borderColor
       ? { color: normalizeColor(content.style.borderColor), pt: 0.5 }
       : { color: "CCCCCC", pt: 0.5 },
+    autoPage: false,
+    margin: [3, 5, 3, 5],
   };
 
   slide.addTable(rows, tableOpts);
@@ -217,13 +236,10 @@ function addCode(
   element: ComputedElement,
 ): void {
   // テーマの mono フォントと muted カラーを使用
-  const monoFont = element.resolvedStyle.monoFont ?? "Courier New";
   const codeBg = element.resolvedStyle.codeBgColor ?? "F5F5F5";
 
   slide.addText(content.code, {
     ...baseOpts,
-    fontFace: monoFont,
-    fontSize: (baseOpts.fontSize ?? 14) - 4,
     fill: { color: normalizeColor(codeBg) },
   });
 }

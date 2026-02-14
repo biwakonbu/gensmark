@@ -7,6 +7,15 @@ dist
 output
 *.tgz
 
+# examples outputs
+examples/output
+
+# visual regression outputs
+tests/visual/output
+tests/visual/diff
+tests/visual/golden-darwin
+tests/visual/golden-win32
+
 # code coverage
 coverage
 *.lcov

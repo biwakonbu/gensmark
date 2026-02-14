@@ -27,6 +27,8 @@ export interface PlaceholderConstraints {
   maxLines?: number;
   /** オーバーフロー時の動作 */
   overflow?: OverflowStrategy;
+  /** 必須プレースホルダー (データ未指定を許容しない) */
+  required?: boolean;
 }
 
 /** プレースホルダーのスタイル */

@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, unlinkSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { gensmark, ph } from "../../src/index.ts";
 
-const OUTPUT_DIR = "/Users/biwakonbu/github/gensmark/tests/integration/output";
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const OUTPUT_DIR = join(__dirname, "output");
 
 // 出力ディレクトリを準備
 if (!existsSync(OUTPUT_DIR)) {
