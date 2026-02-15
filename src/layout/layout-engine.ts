@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import type { ComputedSlide } from "../types/layout.ts";
 import type { PlaceholderType, SlideMaster } from "../types/master.ts";
 import type { ValidationResult } from "../types/validation.ts";
+import { DEFAULT_MARGINS } from "../master/master-builder.ts";
 import { OverflowDetector } from "./overflow-detector.ts";
 import { TextMeasurer } from "./text-measurer.ts";
 
@@ -60,6 +61,9 @@ export class LayoutEngine {
   async validateSlide(slide: ComputedSlide, master: SlideMaster): Promise<ValidationResult[]> {
     const validations: ValidationResult[] = [];
 
+    // 余白チェック
+    validations.push(...this.checkMarginOverflow(slide, master));
+
     for (const element of slide.elements) {
       // フォントパスの解決
       const fontPath = this.resolveFontPath(
@@ -107,6 +111,45 @@ export class LayoutEngine {
     }
 
     return validations;
+  }
+
+  /** プレースホルダーがスライド余白を超えていないかチェック */
+  private checkMarginOverflow(slide: ComputedSlide, master: SlideMaster): ValidationResult[] {
+    const margins = master.margins ?? DEFAULT_MARGINS;
+    const slideW = master.aspectRatio === "4:3" ? 10.0 : 13.33;
+    const slideH = 7.5;
+    const results: ValidationResult[] = [];
+
+    for (const element of slide.elements) {
+      const ph = element.placeholder;
+      const sides: string[] = [];
+
+      if (ph.x < margins.left) {
+        sides.push(`left (${ph.x.toFixed(2)}in < ${margins.left}in)`);
+      }
+      if (ph.x + ph.width > slideW - margins.right) {
+        sides.push(`right (${(ph.x + ph.width).toFixed(2)}in > ${(slideW - margins.right).toFixed(2)}in)`);
+      }
+      if (ph.y < margins.top) {
+        sides.push(`top (${ph.y.toFixed(2)}in < ${margins.top}in)`);
+      }
+      if (ph.y + ph.height > slideH - margins.bottom) {
+        sides.push(`bottom (${(ph.y + ph.height).toFixed(2)}in > ${(slideH - margins.bottom).toFixed(2)}in)`);
+      }
+
+      if (sides.length > 0) {
+        results.push({
+          slideIndex: slide.index,
+          placeholder: ph.name,
+          severity: "warning",
+          type: "margin-overflow",
+          message: `Placeholder "${ph.name}" exceeds slide margins: ${sides.join(", ")}`,
+          suggestion: `Adjust placeholder position/size to fit within margins (top: ${margins.top}in, right: ${margins.right}in, bottom: ${margins.bottom}in, left: ${margins.left}in)`,
+        });
+      }
+    }
+
+    return results;
   }
 
   /** フォントパスを解決 */

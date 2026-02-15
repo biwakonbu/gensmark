@@ -15,7 +15,8 @@ const HALF_W = (CONTENT_W - COL_GAP) / 2; // 2カラム時の各カラム幅
 const SIDEBAR_W = 0.08; // 左サイドアクセントバー幅
 const TITLE_Y = 0.6; // タイトル Y 座標
 const BODY_Y = 1.7; // 本文 Y 座標
-const BODY_H = 5.3; // 本文高さ (フッター分を考慮)
+const MARGIN_BOTTOM = 0.5; // 下余白 (マスター margins.bottom と一致)
+const BODY_H = SLIDE_H - BODY_Y - MARGIN_BOTTOM; // 本文高さ (下余白ベースで算出)
 const SEPARATOR_H = 0.02; // セパレータライン高さ
 const FOOTER_H = 0.01; // フッターライン高さ
 
@@ -61,6 +62,7 @@ export function createStandardMaster(theme: Theme): SlideMaster {
     name: "standard",
     theme,
     aspectRatio: "16:9",
+    margins: { top: 0.5, right: 0.75, bottom: MARGIN_BOTTOM, left: 0.75 },
     layouts: {
       // 1. タイトルスライド (白背景 + 装飾)
       "title-slide": {

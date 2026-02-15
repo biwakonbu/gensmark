@@ -6,6 +6,7 @@ export type ValidationSeverity = "error" | "warning" | "info";
 /** バリデーション種別 */
 export type ValidationType =
   | "overflow"
+  | "margin-overflow"
   | "missing-placeholder"
   | "type-mismatch"
   | "asset-error"

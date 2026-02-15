@@ -1,7 +1,15 @@
-import type { PlaceholderDef, PlaceholderOverrides } from "../types/master.ts";
+import type { PlaceholderDef, PlaceholderOverrides, SlideMargins } from "../types/master.ts";
 
 // プレースホルダーヘルパー
 // AI がマスター定義する際のボイラープレートを削減
+
+/** デフォルトのスライドマージン (インチ) */
+export const DEFAULT_MARGINS: SlideMargins = {
+  top: 0.5,
+  right: 0.75,
+  bottom: 0.5,
+  left: 0.75,
+};
 
 /** 16:9 スライドのデフォルトサイズ (インチ) */
 const SLIDE_W = 13.33;

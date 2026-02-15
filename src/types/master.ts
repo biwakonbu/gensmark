@@ -117,6 +117,14 @@ export interface SlideLayout {
   fixedElements?: FixedElement[];
 }
 
+/** スライドマージン (インチ) */
+export interface SlideMargins {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
 /** スライドマスター定義 */
 export interface SlideMaster {
   /** マスター名 */
@@ -127,6 +135,8 @@ export interface SlideMaster {
   layouts: Record<string, SlideLayout>;
   /** アスペクト比 (デフォルト: 16:9) */
   aspectRatio?: AspectRatio;
+  /** スライド余白 (インチ) */
+  margins?: SlideMargins;
 }
 
 /** マスター定義オプション */
@@ -135,6 +145,7 @@ export interface MasterOptions {
   theme: Theme;
   layouts: Record<string, SlideLayout>;
   aspectRatio?: AspectRatio;
+  margins?: SlideMargins;
 }
 
 /** プレースホルダーヘルパーのオーバーライドオプション */
