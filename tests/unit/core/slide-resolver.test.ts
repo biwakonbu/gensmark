@@ -134,6 +134,43 @@ describe("resolveSlide", () => {
     expect(unknownWarning?.placeholder).toBe("unknown_ph");
   });
 
+  test("title プレースホルダーに非テキストを入れると type-mismatch error", () => {
+    const { validations } = resolveSlide(
+      {
+        layout: "content",
+        data: {
+          title: { type: "bullet", items: [{ text: "x" }] },
+        },
+      },
+      testMaster,
+      0,
+    );
+
+    const err = validations.find((v) => v.type === "type-mismatch");
+    expect(err).toBeDefined();
+    expect(err?.severity).toBe("error");
+    expect(err?.placeholder).toBe("title");
+  });
+
+  test("image プレースホルダーに string を入れると type-mismatch error", () => {
+    const { validations } = resolveSlide(
+      {
+        layout: "with-image",
+        data: {
+          title: "T",
+          photo: "/path/to/image.png",
+        },
+      },
+      testMaster,
+      0,
+    );
+
+    const err = validations.find((v) => v.type === "type-mismatch");
+    expect(err).toBeDefined();
+    expect(err?.severity).toBe("error");
+    expect(err?.placeholder).toBe("photo");
+  });
+
   test("データが渡されなかったプレースホルダーで info が返る", () => {
     const { validations } = resolveSlide(
       { layout: "content", data: { title: "T" } },

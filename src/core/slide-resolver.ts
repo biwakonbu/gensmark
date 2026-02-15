@@ -96,6 +96,50 @@ export function resolveSlide(
       continue;
     }
 
+    // Mermaid はコンパイル前に image に解決される前提 (gensmark.compile 経由)
+    if (typeof value !== "string" && value.type === "mermaid") {
+      validations.push({
+        slideIndex,
+        placeholder: name,
+        severity: "error",
+        type: "asset-error",
+        message: `MermaidContent must be resolved before rendering. Use gensmark.compile() to enable asset resolution.`,
+        suggestion: `Call gensmark.compile({ master, slides }) instead of DeckBuilder.build()`,
+      });
+      continue;
+    }
+
+    // プレースホルダー型と値型の整合性チェック (AI フレンドリーにするための早期失敗)
+    if (placeholder.type === "title" || placeholder.type === "subtitle") {
+      const isTextLike =
+        typeof value === "string" || (typeof value !== "string" && value.type === "text");
+      if (!isTextLike) {
+        validations.push({
+          slideIndex,
+          placeholder: name,
+          severity: "error",
+          type: "type-mismatch",
+          message: `Placeholder "${name}" is type "${placeholder.type}" but received non-text value`,
+          suggestion: `Provide a string or TextContent: { type: "text", value: "..." }`,
+        });
+        continue;
+      }
+    }
+
+    if (placeholder.type === "image") {
+      if (typeof value === "string" || value.type !== "image") {
+        validations.push({
+          slideIndex,
+          placeholder: name,
+          severity: "error",
+          type: "type-mismatch",
+          message: `Placeholder "${name}" is type "image" but received non-image value`,
+          suggestion: `Provide ImageContent: { type: "image", path: "/path/to/file.png" }`,
+        });
+        continue;
+      }
+    }
+
     // 画像コンテンツの存在チェック
     if (typeof value !== "string" && value.type === "image") {
       const img = value as ImageContent;
@@ -116,7 +160,16 @@ export function resolveSlide(
       }
     }
 
-    const resolvedStyle = resolveStyle(placeholder, master);
+    let resolvedStyle = resolveStyle(placeholder, master);
+
+    // コンテンツ種別に応じたスタイル補正
+    // code は等幅フォントを使用する (計測・レンダリングのズレを抑える)
+    if (typeof value !== "string" && value.type === "code") {
+      resolvedStyle = {
+        ...resolvedStyle,
+        fontFace: resolvedStyle.monoFont ?? master.theme.fonts.mono ?? "Courier New",
+      };
+    }
 
     elements.push({
       placeholder,

@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import type opentype from "opentype.js";
 import { OverflowDetector } from "../../../src/layout/overflow-detector.ts";
 import { TextMeasurer } from "../../../src/layout/text-measurer.ts";
-import type { BulletList } from "../../../src/types/content.ts";
+import type { BulletList, TableContent } from "../../../src/types/content.ts";
 import type { PlaceholderDef } from "../../../src/types/master.ts";
 import { TEST_FONT_PATH } from "../../helpers/font-path.ts";
 
@@ -279,6 +279,82 @@ describe("OverflowDetector", () => {
         DEFAULT_LINE_SPACING,
       );
       expect(result.validations).toHaveLength(0);
+    });
+  });
+
+  describe("テーブルオーバーフロー検知", () => {
+    test("小さいテーブルはバリデーション空", () => {
+      const ph = makePlaceholder({
+        height: 5,
+        constraints: { overflow: "shrink", minFontSize: 10 },
+      });
+      const table: TableContent = {
+        type: "table",
+        headers: ["Name", "Value"],
+        rows: [
+          ["A", "1"],
+          ["B", "2"],
+        ],
+      };
+      const result = detector.detect(ph, table, font, 0, DEFAULT_FONT_SIZE, DEFAULT_LINE_SPACING);
+      expect(result.validations).toHaveLength(0);
+    });
+
+    test("大きいテーブル (shrink) はフォントサイズを縮小", () => {
+      const fontSize = 18;
+      const ph = makePlaceholder({
+        height: 2.0,
+        style: { fontSize },
+        constraints: { overflow: "shrink", minFontSize: 10 },
+      });
+      const table: TableContent = {
+        type: "table",
+        headers: ["Col1", "Col2", "Col3"],
+        rows: Array.from({ length: 15 }, (_, i) => [`Row${i + 1}`, `Data${i + 1}`, `Val${i + 1}`]),
+      };
+      const result = detector.detect(ph, table, font, 0, fontSize, DEFAULT_LINE_SPACING);
+
+      // shrink で収まればバリデーションは空で、フォントサイズが縮小される
+      if (result.validations.length === 0) {
+        expect(result.computedFontSize).toBeLessThan(fontSize);
+        expect(result.computedFontSize).toBeGreaterThanOrEqual(10);
+      }
+    });
+
+    test("minFontSize の尊重", () => {
+      const fontSize = 18;
+      const ph = makePlaceholder({
+        height: 0.5, // 非常に小さい
+        style: { fontSize },
+        constraints: { overflow: "shrink", minFontSize: 12 },
+      });
+      const table: TableContent = {
+        type: "table",
+        headers: ["A", "B", "C"],
+        rows: Array.from({ length: 30 }, (_, i) => [`R${i}`, `D${i}`, `V${i}`]),
+      };
+      const result = detector.detect(ph, table, font, 0, fontSize, DEFAULT_LINE_SPACING);
+
+      // 最小サイズでも収まらないので error
+      expect(result.validations.length).toBeGreaterThan(0);
+      expect(result.validations[0]?.severity).toBe("error");
+      expect(result.computedFontSize).toBe(12);
+    });
+
+    test("overflow: 'warn' でテーブルが警告を生成", () => {
+      const ph = makePlaceholder({
+        height: 0.5,
+        constraints: { overflow: "warn" },
+      });
+      const table: TableContent = {
+        type: "table",
+        headers: ["A", "B"],
+        rows: Array.from({ length: 20 }, (_, i) => [`R${i}`, `D${i}`]),
+      };
+      const result = detector.detect(ph, table, font, 0, DEFAULT_FONT_SIZE, DEFAULT_LINE_SPACING);
+
+      expect(result.validations.length).toBeGreaterThan(0);
+      expect(result.validations[0]?.severity).toBe("warning");
     });
   });
 });

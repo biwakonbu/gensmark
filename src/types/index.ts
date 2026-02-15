@@ -5,6 +5,7 @@ export type {
   BulletList,
   CodeContent,
   ImageContent,
+  MermaidContent,
   PlaceholderValue,
   SlideContent,
   TableCell,
@@ -34,13 +35,20 @@ export type {
   VerticalAlign,
 } from "./master.ts";
 export type {
+  QualityFinding,
+  QualityProfile,
+  QualityReport,
+  QualitySeverity,
+  ReadabilityThresholds,
+} from "./quality.ts";
+export type { DeckSpec } from "./spec.ts";
+export type {
   ColorPalette,
   FontPaths,
   FontSet,
   Theme,
   ThemeOptions,
 } from "./theme.ts";
-
 export type {
   BuildResult,
   OverflowDetail,

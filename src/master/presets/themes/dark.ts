@@ -4,16 +4,16 @@ import type { Theme } from "../../../types/theme.ts";
 export const darkTheme: Theme = {
   name: "dark",
   colors: {
-    primary: "#8ab4f8",
-    secondary: "#f28b82",
-    background: "#1e1e1e",
-    text: "#e8eaed",
-    accent: "#81c995",
-    muted: "#2d2d2d",
+    primary: "#5B9BD5",
+    secondary: "#7B8FA1",
+    background: "#1B2432",
+    text: "#E8ECF1",
+    accent: "#8AB4F8",
+    muted: "#243447",
   },
   fonts: {
-    heading: "Arial",
-    body: "Arial",
-    mono: "Courier New",
+    heading: "Calibri",
+    body: "Calibri",
+    mono: "Consolas",
   },
 };

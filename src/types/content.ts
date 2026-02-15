@@ -85,6 +85,17 @@ export interface CodeContent {
   language?: string;
 }
 
+/** Mermaid 図コンテンツ */
+export interface MermaidContent {
+  type: "mermaid";
+  /** Mermaid 記法 */
+  code: string;
+  /** 出力形式 (既定: "auto" = svg優先, 失敗時png) */
+  format?: "auto" | "svg" | "png";
+  /** 追加設定 (Mermaid config の上書き) */
+  config?: Record<string, unknown>;
+}
+
 /** プレースホルダーに渡す値の型 */
 export type PlaceholderValue =
   | string
@@ -92,7 +103,8 @@ export type PlaceholderValue =
   | BulletList
   | ImageContent
   | TableContent
-  | CodeContent;
+  | CodeContent
+  | MermaidContent;
 
 /** スライドコンテンツ定義 */
 export interface SlideContent {
