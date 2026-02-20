@@ -86,7 +86,7 @@ export class OverflowDetector {
         slideIndex,
       );
     }
-    const overflow = constraints?.overflow ?? "warn";
+    const overflow = constraints?.overflow ?? "shrink";
     const maxFontSize = constraints?.maxFontSize ?? fontSize;
     const minFontSize = constraints?.minFontSize ?? 10;
     const effectiveSize = getEffectiveSize(placeholder);

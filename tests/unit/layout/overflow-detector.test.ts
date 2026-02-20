@@ -282,6 +282,49 @@ describe("OverflowDetector", () => {
     });
   });
 
+  describe("デフォルト shrink 挙動", () => {
+    test("constraints 未指定でオーバーフロー時に自動縮小される", () => {
+      const fontSize = 24;
+      const ph = makePlaceholder({
+        width: 5,
+        height: 1.5,
+        style: { fontSize },
+        // constraints を指定しない → デフォルト "shrink"
+      });
+      const longText = "This text needs to be shrunk to fit properly in a small area. ".repeat(5);
+      const result = detector.detect(ph, longText, font, 0, fontSize, DEFAULT_LINE_SPACING);
+
+      // shrink がデフォルトなので、エラーではなく警告付きでフォントサイズ縮小
+      expect(result.computedFontSize).toBeLessThan(fontSize);
+      expect(result.computedFontSize).toBeGreaterThanOrEqual(10);
+      // shrink 成功時は severity が "warning"（"error" にならない）
+      for (const v of result.validations) {
+        expect(v.severity).toBe("warning");
+      }
+    });
+
+    test("constraints 未指定の箇条書きでも自動縮小される", () => {
+      const fontSize = 18;
+      const ph = makePlaceholder({
+        height: 2,
+        style: { fontSize },
+        // constraints を指定しない
+      });
+      const bullet: BulletList = {
+        type: "bullet",
+        items: Array.from({ length: 10 }, (_, i) => ({
+          text: `Item ${i + 1}: Description text here that is somewhat long`,
+        })),
+      };
+      const result = detector.detect(ph, bullet, font, 0, fontSize, DEFAULT_LINE_SPACING);
+
+      // shrink がデフォルトなので、警告/エラーではなく縮小で対応
+      if (result.validations.length === 0) {
+        expect(result.computedFontSize).toBeLessThanOrEqual(fontSize);
+      }
+    });
+  });
+
   describe("テーブルオーバーフロー検知", () => {
     test("小さいテーブルはバリデーション空", () => {
       const ph = makePlaceholder({

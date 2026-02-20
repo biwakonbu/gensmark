@@ -213,8 +213,10 @@ function addTable(
   const effectiveTableWidth = Math.max(ph.width - tablePadding, 1.0);
   const colW: number[] = Array(numCols).fill(effectiveTableWidth / numCols);
 
+  // 余白を左右均等に配分して中央配置
+  const sideOffset = (ph.width - effectiveTableWidth) / 2;
   const tableOpts: PptxGenJS.TableProps = {
-    x: ph.x,
+    x: ph.x + sideOffset,
     y: ph.y,
     w: effectiveTableWidth,
     colW,
