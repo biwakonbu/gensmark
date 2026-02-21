@@ -10,6 +10,7 @@
     "test": "bun test",
     "test:visual": "bun run scripts/visual-test.ts",
     "test:visual:update": "bun run scripts/visual-test.ts --update",
+    "test:template-fidelity": "bun run scripts/verify-template-fidelity.ts",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write ."

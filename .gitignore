@@ -13,6 +13,8 @@ examples/output
 # visual regression outputs
 tests/visual/output
 tests/visual/diff
+# downloaded PPTX template samples
+tests/fixtures/template/samples
 tests/visual/golden-darwin
 tests/visual/golden-win32
 

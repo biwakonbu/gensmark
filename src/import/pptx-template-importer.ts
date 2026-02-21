@@ -478,6 +478,12 @@ function uniquifyLayoutName(name: string, existing: Map<string, ParsedLayout>): 
 }
 
 function resolveAspectRatio(sldSz: Record<string, unknown> | undefined): "16:9" | "4:3" {
+  // type 属性が明示されていれば即座に返す
+  const typeAttr = asString(sldSz?.["@_type"]);
+  if (typeAttr === "screen16x9") return "16:9";
+  if (typeAttr === "screen4x3") return "4:3";
+
+  // フォールバック: cx/cy の比率から判定
   const cx = Number.parseFloat(asString(sldSz?.["@_cx"]) ?? "");
   const cy = Number.parseFloat(asString(sldSz?.["@_cy"]) ?? "");
   if (!Number.isFinite(cx) || !Number.isFinite(cy) || cy === 0) return "16:9";
