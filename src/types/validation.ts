@@ -58,6 +58,14 @@ export interface BuildResult {
   validations: ValidationResult[];
   /** PPTX バイナリ (バリデーション通過時) */
   pptxBuffer?: ArrayBuffer;
+  /** PDF バイナリ (バリデーション通過時) */
+  pdfBuffer?: ArrayBuffer;
+  /** self-contained HTML 文字列 */
+  html?: string;
   /** PPTX ファイルとして保存 */
   toPptxFile: (path: string) => Promise<void>;
+  /** PDF ファイルとして保存 */
+  toPdfFile: (path: string) => Promise<void>;
+  /** self-contained HTML ファイルとして保存 */
+  toHtmlFile: (path: string) => Promise<void>;
 }

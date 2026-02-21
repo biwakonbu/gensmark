@@ -43,6 +43,13 @@ export type {
 } from "./quality.ts";
 export type { DeckSpec } from "./spec.ts";
 export type {
+  ImportedTemplate,
+  PlaceholderHint,
+  TemplateImportOptions,
+  TemplateImportWarning,
+  TemplateLayoutMapEntry,
+} from "./template.ts";
+export type {
   ColorPalette,
   FontPaths,
   FontSet,

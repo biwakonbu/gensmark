@@ -281,7 +281,7 @@ describe("resolveSlide", () => {
     expect(gradientInfo?.severity).toBe("info");
     expect(gradientInfo?.message).toContain("Gradient background");
     expect(gradientInfo?.message).toContain("#FF0000");
-    expect(gradientInfo?.suggestion).toContain("solid or image");
+    expect(gradientInfo?.suggestion).toContain("solid/image background for PPTX");
   });
 
   test("solid 背景では unsupported-feature バリデーションが返らない", () => {

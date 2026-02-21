@@ -1,5 +1,5 @@
 import type { ComputedSlide } from "../types/layout.ts";
-import type { SlideMaster } from "../types/master.ts";
+import type { AspectRatio, SlideMaster } from "../types/master.ts";
 
 // レンダラーインターフェース
 
@@ -21,5 +21,5 @@ export interface Renderer {
   dispose?(): void;
 
   /** 内部状態をリセット (複数回 build() 対応、任意実装) */
-  reset?(): void;
+  reset?(aspectRatio?: AspectRatio): void;
 }

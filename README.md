@@ -47,6 +47,49 @@ if (!result.build.isValid) throw new Error("compile failed (validation errors)")
 await result.build.toPptxFile("out.pptx");
 ```
 
+## テンプレート Import (.pptx)
+
+ローカル `.pptx` のスライドマスター/レイアウトを取り込み、同じレイアウトを継承して出力できます。
+
+```ts
+import { gensmark } from "./src/index.ts";
+
+const template = await gensmark.importTemplate({
+  path: "/absolute/path/to/template.pptx",
+});
+
+const spec = {
+  master: template.master,
+  slides: [
+    { layout: "title-slide", data: { title: "QBR", subtitle: "FY2026 Q1" } },
+    { layout: "content", data: { title: "Summary", body: "..." } },
+  ],
+};
+
+const result = await gensmark.compile(spec, {
+  template,
+  profile: "strict",
+});
+
+if (!result.build.isValid) throw new Error("compile failed");
+await result.build.toPptxFile("out-template.pptx");
+
+// import時/継承時の警告
+console.log(result.templateWarnings);
+```
+
+`DeckBuilder` 経路でも使えます。
+
+```ts
+const template = await gensmark.importTemplate({ path: "/absolute/path/to/template.pptx" });
+const deck = gensmark.create({ master: template.master, template });
+deck.slide({ layout: "content", data: { title: "T", body: "B" } });
+const build = await deck.build();
+if (build.isValid) await build.toPptxFile("out-template-builder.pptx");
+```
+
+詳細仕様は `docs/template-import.md` を参照してください。
+
 ## 自律修正 (Autofix)
 
 ```ts
@@ -116,4 +159,3 @@ await gensmark.autofix(spec, {
 環境変数 `OPENAI_API_KEY` または `llm.apiKey` を利用します。
 
 This project was created using `bun init` in bun v1.3.2. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
-

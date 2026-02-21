@@ -2,7 +2,9 @@ import { existsSync } from "node:fs";
 import type { ImageContent, SlideContent } from "../types/content.ts";
 import type { ComputedElement, ComputedSlide } from "../types/layout.ts";
 import type { PlaceholderDef, PlaceholderStyle, SlideMaster } from "../types/master.ts";
+import type { ImportedTemplate } from "../types/template.ts";
 import type { ValidationResult } from "../types/validation.ts";
+import { bindTemplateData } from "./template-binder.ts";
 
 // SlideContent + Layout -> ComputedSlide への解決
 
@@ -49,6 +51,9 @@ export function resolveSlide(
   content: SlideContent,
   master: SlideMaster,
   slideIndex: number,
+  options: {
+    template?: ImportedTemplate;
+  } = {},
 ): { computed: ComputedSlide; validations: ValidationResult[] } {
   const validations: ValidationResult[] = [];
 
@@ -81,8 +86,12 @@ export function resolveSlide(
     placeholderMap.set(ph.name, ph);
   }
 
+  const resolvedData = options.template
+    ? bindTemplateData(content.data, layout.placeholders)
+    : content.data;
+
   // data のキーに対応するプレースホルダーを解決
-  for (const [name, value] of Object.entries(content.data)) {
+  for (const [name, value] of Object.entries(resolvedData)) {
     const placeholder = placeholderMap.get(name);
 
     if (!placeholder) {
@@ -181,7 +190,7 @@ export function resolveSlide(
 
   // データが渡されなかったプレースホルダーを検知
   for (const [phName, phDef] of placeholderMap) {
-    if (!(phName in content.data) && phDef.type !== "image") {
+    if (!(phName in resolvedData) && phDef.type !== "image") {
       validations.push({
         slideIndex,
         placeholder: phName,
@@ -195,15 +204,15 @@ export function resolveSlide(
   // 背景の解決 (スライド固有 > レイアウト)
   const background = content.background ?? layout.background;
 
-  // グラデーション背景は pptxgenjs 非サポートのためフォールバック通知
+  // グラデーション背景は PPTX レンダラーでは非サポート (HTML/PDF では対応)
   if (background?.type === "gradient") {
     validations.push({
       slideIndex,
       placeholder: "",
       severity: "info",
       type: "unsupported-feature",
-      message: `Gradient background is not fully supported. Will fallback to solid color: ${background.colors[0] ?? "#ffffff"}`,
-      suggestion: `Use solid or image background for reliable rendering`,
+      message: `Gradient background is not fully supported in PPTX output. HTML/PDF output supports gradients natively. PPTX will fallback to solid color: ${background.colors[0] ?? "#ffffff"}`,
+      suggestion: `Use HTML/PDF output for gradient backgrounds, or use solid/image background for PPTX`,
     });
   }
 

@@ -35,7 +35,7 @@ mkdirSync(DIFF_ROOT, { recursive: true });
 
 let hasFailure = false;
 
-for (const [name, spec] of Object.entries(visualFixtures)) {
+for (const [name, fixture] of Object.entries(visualFixtures)) {
   const fixtureOutDir = join(OUT_ROOT, name);
   const fixtureGoldenDir = join(GOLDEN_ROOT, name);
   const fixtureDiffDir = join(DIFF_ROOT, name);
@@ -44,7 +44,10 @@ for (const [name, spec] of Object.entries(visualFixtures)) {
 
   const pptxPath = join(fixtureOutDir, `${name}.pptx`);
 
-  const compiled = await gensmark.compile(spec, { profile: "draft" });
+  const compiled = await gensmark.compile(fixture.spec, {
+    ...(fixture.options ?? {}),
+    profile: fixture.options?.profile ?? "draft",
+  });
   if (!compiled.build.isValid) {
     const errors = compiled.validations.filter((v) => v.severity === "error");
     throw new Error(`compile failed (fixture=${name}): ${errors.map((e) => e.type).join(", ")}`);

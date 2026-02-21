@@ -4,12 +4,15 @@ import { type AutofixOptions, type AutofixResult, autofixDeck } from "./compiler
 import { type CompileOptions, type CompileResult, compileDeck } from "./compiler/compile.ts";
 import type { DeckBuilderOptions } from "./core/deck-builder.ts";
 import { DeckBuilder } from "./core/deck-builder.ts";
+import { importPptxTemplate } from "./import/pptx-template-importer.ts";
 import { createStandardMaster } from "./master/presets/standard.ts";
 import { darkTheme } from "./master/presets/themes/dark.ts";
 import { defaultTheme } from "./master/presets/themes/default.ts";
 import type { MasterOptions, SlideMaster } from "./types/master.ts";
 import type { DeckSpec } from "./types/spec.ts";
+import type { ImportedTemplate, TemplateImportOptions } from "./types/template.ts";
 import type { Theme, ThemeOptions } from "./types/theme.ts";
+import type { PreviewOptions } from "./preview/preview-server.ts";
 
 // トップレベル API
 export const gensmark = {
@@ -43,6 +46,17 @@ export const gensmark = {
     return autofixDeck(spec, options);
   },
 
+  /** テンプレート .pptx を取り込む */
+  importTemplate(options: TemplateImportOptions): Promise<ImportedTemplate> {
+    return importPptxTemplate(options);
+  },
+
+  /** ライブプレビューサーバーを起動 */
+  async preview(spec: DeckSpec, options?: PreviewOptions): Promise<void> {
+    const { startPreview } = await import("./preview/preview-server.ts");
+    return startPreview(spec, options);
+  },
+
   /** ビルトインプリセット */
   presets: {
     /** standard マスターを作成 */
@@ -70,6 +84,11 @@ export { TextMeasurer } from "./layout/text-measurer.ts";
 // プレースホルダーヘルパーのエクスポート
 export { ph } from "./master/master-builder.ts";
 export { PptxRenderer } from "./renderer/pptx/pptx-renderer.ts";
+// v2: HTML レンダラー、PDF エクスポーター、ブラウザ Layout Engine
+export { HtmlRenderer } from "./renderer/html/html-renderer.ts";
+export { PdfExporter } from "./renderer/pdf/pdf-exporter.ts";
+export { BrowserLayoutEngine } from "./layout/browser-layout-engine.ts";
+export { BrowserPool, getSharedBrowserPool, disposeSharedBrowserPool } from "./layout/browser-pool.ts";
 export type {
   BulletItem,
   BulletList,
@@ -112,6 +131,13 @@ export type {
   ReadabilityThresholds,
 } from "./types/quality.ts";
 export type { DeckSpec } from "./types/spec.ts";
+export type {
+  ImportedTemplate,
+  PlaceholderHint,
+  TemplateImportOptions,
+  TemplateImportWarning,
+  TemplateLayoutMapEntry,
+} from "./types/template.ts";
 // 型のエクスポート
 export type {
   ColorPalette,

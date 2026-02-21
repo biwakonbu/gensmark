@@ -1,7 +1,14 @@
+import { join } from "node:path";
+import type { CompileOptions } from "../../src/compiler/compile.ts";
 import { gensmark } from "../../src/index.ts";
 import type { DeckSpec } from "../../src/types/spec.ts";
 
-function createVisualSpec(): DeckSpec {
+export interface VisualFixtureCase {
+  spec: DeckSpec;
+  options?: CompileOptions;
+}
+
+function createStandardVisualSpec(): DeckSpec {
   const theme = gensmark.defineTheme({
     name: "visual-fixture",
     colors: {
@@ -21,7 +28,6 @@ function createVisualSpec(): DeckSpec {
   });
 
   const master = gensmark.presets.standardMaster(theme);
-
   return {
     master,
     slides: [
@@ -86,6 +92,39 @@ function createVisualSpec(): DeckSpec {
   };
 }
 
-export const visualFixtures: Record<string, DeckSpec> = {
-  "standard-smoke": createVisualSpec(),
+async function createTemplateVisualFixture(): Promise<VisualFixtureCase> {
+  const templatePath = join(process.cwd(), "tests/fixtures/template/basic-template.pptx");
+  const template = await gensmark.importTemplate({ path: templatePath });
+  return {
+    spec: {
+      master: template.master,
+      slides: [
+        {
+          layout: "title-slide",
+          data: {
+            title: "template visual test",
+            subtitle: "imported pptx master",
+          },
+        },
+        {
+          layout: "content",
+          data: {
+            title: "content",
+            body: {
+              type: "bullet",
+              items: [{ text: "alpha" }, { text: "beta" }, { text: "gamma" }],
+            },
+          },
+        },
+      ],
+    },
+    options: { template },
+  };
+}
+
+const templateFixture = await createTemplateVisualFixture();
+
+export const visualFixtures: Record<string, VisualFixtureCase> = {
+  "standard-smoke": { spec: createStandardVisualSpec() },
+  "template-smoke": templateFixture,
 };

@@ -1,8 +1,8 @@
 import { existsSync } from "node:fs";
+import { DEFAULT_MARGINS } from "../master/master-builder.ts";
 import type { ComputedSlide } from "../types/layout.ts";
 import type { PlaceholderType, SlideMaster } from "../types/master.ts";
 import type { ValidationResult } from "../types/validation.ts";
-import { DEFAULT_MARGINS } from "../master/master-builder.ts";
 import { OverflowDetector } from "./overflow-detector.ts";
 import { TextMeasurer } from "./text-measurer.ts";
 
@@ -128,13 +128,17 @@ export class LayoutEngine {
         sides.push(`left (${ph.x.toFixed(2)}in < ${margins.left}in)`);
       }
       if (ph.x + ph.width > slideW - margins.right) {
-        sides.push(`right (${(ph.x + ph.width).toFixed(2)}in > ${(slideW - margins.right).toFixed(2)}in)`);
+        sides.push(
+          `right (${(ph.x + ph.width).toFixed(2)}in > ${(slideW - margins.right).toFixed(2)}in)`,
+        );
       }
       if (ph.y < margins.top) {
         sides.push(`top (${ph.y.toFixed(2)}in < ${margins.top}in)`);
       }
       if (ph.y + ph.height > slideH - margins.bottom) {
-        sides.push(`bottom (${(ph.y + ph.height).toFixed(2)}in > ${(slideH - margins.bottom).toFixed(2)}in)`);
+        sides.push(
+          `bottom (${(ph.y + ph.height).toFixed(2)}in > ${(slideH - margins.bottom).toFixed(2)}in)`,
+        );
       }
 
       if (sides.length > 0) {
