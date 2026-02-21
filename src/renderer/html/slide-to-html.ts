@@ -5,7 +5,7 @@ import { elementToHtml } from "./element-to-html.ts";
 // ComputedSlide -> HTML 変換
 
 /** 背景定義を CSS に変換 */
-function backgroundToCss(bg?: BackgroundDef): string {
+export function backgroundToCss(bg?: BackgroundDef): string {
   if (!bg) return "background:#FFFFFF";
   switch (bg.type) {
     case "solid":
@@ -25,7 +25,7 @@ function backgroundToCss(bg?: BackgroundDef): string {
 }
 
 /** 固定要素を HTML に変換 */
-function fixedElementToHtml(el: FixedElement): string {
+export function fixedElementToHtml(el: FixedElement): string {
   const baseStyle = `position:absolute;left:${el.x}in;top:${el.y}in;width:${el.width}in;height:${el.height}in`;
 
   switch (el.type) {

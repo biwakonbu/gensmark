@@ -206,6 +206,22 @@ deck.slide({
 });
 ```
 
+## カスタムマスターの利用
+
+既存の PPTX テンプレートを使いたい場合:
+
+1. **Master Editor** (`bun run src/tools/master-editor/master-editor.ts`) で PPTX をインポート
+2. 「Export Code」で TypeScript マスター定義コードを取得
+3. 生成コードを DeckSpec に組み込んで使用
+
+```typescript
+// Master Editor で生成したカスタムマスターを使う場合
+const theme = gensmark.defineTheme({ name: "custom", colors: { /* ... */ }, fonts: { /* ... */ } });
+const master = gensmark.defineMaster({ name: "custom", theme, layouts: { /* ... */ } });
+
+const deck = gensmark.create({ master }).slide({ /* ... */ });
+```
+
 ## ルール
 
 - ランタイムは必ず `bun` を使用する (`bun <file>` で実行)
